@@ -453,7 +453,7 @@ export class NowPayments {
 
   /** Transfer between user accounts. Requires JWT. */
   async createTransfer(
-    params: { currency: string; amount: number; from_id: number; to_id: number },
+    params: { currency: string; amount: number; from_id: number | string; to_id: number | string },
     jwtToken: string
   ): Promise<unknown> {
     const { data } = await this.client.post(
@@ -466,7 +466,7 @@ export class NowPayments {
 
   /** Write off from user to master account. Requires JWT. */
   async writeOff(
-    params: { currency: string; amount: number; sub_partner_id: string },
+    params: { currency: string; amount: number; sub_partner_id: string | number },
     jwtToken: string
   ): Promise<unknown> {
     const { data } = await this.client.post(
@@ -479,7 +479,7 @@ export class NowPayments {
 
   /** Deposit from master to user account. Requires JWT. */
   async deposit(
-    params: { currency: string; amount: number; sub_partner_id: string },
+    params: { currency: string; amount: number; sub_partner_id: string | number },
     jwtToken: string
   ): Promise<unknown> {
     const { data } = await this.client.post(

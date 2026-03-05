@@ -2,12 +2,13 @@
  * NOWPayments API Type Definitions
  */
 
-/** Payment status values – use PAYMENT_STATUSES for iteration */
+/** Payment status values – use PAYMENT_STATUSES for iteration. API may return "sending" or "spending". */
 export type PaymentStatus =
   | 'waiting'
   | 'confirming'
   | 'confirmed'
   | 'spending'
+  | 'sending'  /* API docs variation */
   | 'partially_paid'
   | 'finished'
   | 'failed'
@@ -20,6 +21,7 @@ export const PAYMENT_STATUSES: readonly PaymentStatus[] = [
   'confirming',
   'confirmed',
   'spending',
+  'sending',
   'partially_paid',
   'finished',
   'failed',
@@ -41,6 +43,7 @@ export const PAYMENT_PENDING_STATUSES: PaymentStatus[] = [
   'confirming',
   'confirmed',
   'spending',
+  'sending',
   'partially_paid',
 ];
 

@@ -43,9 +43,9 @@ async function main() {
   );
 
   console.log('Payout created:', payout.id);
-  console.log('Batch withdrawal ID:', payout.batch_withdrawal_id);
+  console.log('Batch withdrawal ID:', payout.withdrawals?.[0]?.batch_withdrawal_id ?? payout.id);
 
-  // 4. Verify (requires verification_code from email)
+  // 4. Verify (requires verification_code from email). Use payout.id as batch ID.
   const code = process.env.VERIFICATION_CODE;
   if (code) {
     const verified = await np.verifyPayout(payout.id, code, token);

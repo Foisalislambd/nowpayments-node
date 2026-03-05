@@ -11,6 +11,7 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   confirming: 'Confirming',
   confirmed: 'Confirmed',
   spending: 'Processing',
+  sending: 'Sending to wallet',
   partially_paid: 'Partially paid',
   finished: 'Completed',
   failed: 'Failed',
