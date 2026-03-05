@@ -19,6 +19,14 @@ export class NowPaymentsError extends Error {
     this.name = 'NowPaymentsError';
     Object.setPrototypeOf(this, NowPaymentsError.prototype);
   }
+
+  /** Developer-friendly string for logs */
+  override toString(): string {
+    const parts = [this.message];
+    if (this.statusCode) parts.push(`(status: ${this.statusCode})`);
+    if (this.code) parts.push(`[${this.code}]`);
+    return parts.join(' ');
+  }
 }
 
 export function createHttpClient(config: NowPaymentsConfig): AxiosInstance {

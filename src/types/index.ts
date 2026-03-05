@@ -218,6 +218,20 @@ export interface CreatePayoutParams {
   withdrawals: PayoutWithdrawal[];
 }
 
+/** Create payout response (batch) */
+export interface CreatePayoutResponse {
+  id: string;
+  withdrawals: Array<{
+    id: string;
+    address: string;
+    currency: string;
+    amount: string;
+    status: string;
+    batch_withdrawal_id: string;
+    [key: string]: unknown;
+  }>;
+}
+
 /** Auth response (JWT token for payouts, etc.) */
 export interface AuthResponse {
   token: string;
@@ -228,6 +242,18 @@ export interface ValidateAddressParams {
   address: string;
   currency: string;
   extra_id?: string;
+}
+
+/** Create payment for existing invoice */
+export interface CreateInvoicePaymentParams {
+  iid: number | string;
+  pay_currency?: string;
+  purchase_id?: string;
+  order_description?: string;
+  customer_email?: string;
+  payout_address?: string;
+  payout_extra_id?: string;
+  payout_currency?: string;
 }
 
 /** API error response */

@@ -2,9 +2,17 @@
 
 **A simple, human-friendly Node.js SDK for [NOWPayments](https://nowpayments.io/)** — accept 300+ cryptocurrencies with automatic conversion to your wallet.
 
+## 3-step flow
+
+```
+1. createPayment()  →  Get address for customer
+2. Customer pays    →  You receive coins
+3. getPaymentStatus() or IPN webhook  →  Know when done
+```
+
 ## Setup
 
-**1. Get your API key** → [account.nowpayments.io](https://account.nowpayments.io) (use [sandbox](https://account-sandbox.nowpayments.io) for testing)
+**1. Get API key** → [account.nowpayments.io](https://account.nowpayments.io) ([sandbox](https://account-sandbox.nowpayments.io) for testing)
 
 **2. Install**
 
@@ -12,14 +20,14 @@
 npm install nowpayments-node
 ```
 
-**3. Use**
+**3. Init**
 
 ```typescript
 import { NowPayments } from 'nowpayments-node';
 
 const np = new NowPayments({
-  apiKey: process.env.NOWPAYMENTS_API_KEY!,  // Always use env vars in production
-  sandbox: true,  // Set false for real payments
+  apiKey: process.env.NOWPAYMENTS_API_KEY!,
+  sandbox: true,  // false for real payments
 });
 ```
 
@@ -117,21 +125,21 @@ import {
 
 ## Verify webhooks (IPN)
 
-Ensure callbacks are from NOWPayments, not a fake request:
+Always verify callbacks before trusting them:
 
 ```typescript
 import { NowPayments, verifyIpnSignature } from 'nowpayments-node';
 
-// With instance (needs ipnSecret in config):
 const np = new NowPayments({ apiKey: '...', ipnSecret: 'YOUR_IPN_SECRET' });
-if (np.verifyIpn(req.body, req.headers['x-nowpayments-sig'])) {
-  // Valid – process payment update
+
+// Express / Connect: use raw body (express.json()) for np.verifyIpn
+const sig = req.headers['x-nowpayments-sig'];
+if (sig && np.verifyIpn(req.body, sig)) {
+  // Valid – process payment update (req.body.payment_status, etc.)
 }
 
-// Or standalone:
-if (verifyIpnSignature(req.body, req.headers['x-nowpayments-sig'], 'YOUR_IPN_SECRET')) {
-  // Valid
-}
+// Or without instance:
+verifyIpnSignature(req.body, sig, 'YOUR_IPN_SECRET');
 ```
 
 ## Errors
@@ -143,15 +151,37 @@ try {
   await np.createPayment({ ... });
 } catch (err) {
   if (err instanceof NowPaymentsError) {
-    console.log(err.message);      // Human-readable message
-    console.log(err.statusCode);  // 400, 401, 500, etc.
+    console.log(err.message);     // "Invalid api key"
+    console.log(err.statusCode); // 401
+    console.log(err.toString()); // "Invalid api key (status: 401) [UNAUTHORIZED]"
   }
+}
+```
+
+## Common patterns
+
+**Payout flow (needs JWT):**
+```typescript
+const { token } = await np.getAuthToken(email, password);
+await np.validatePayoutAddress({ address, currency });
+const batch = await np.createPayout({ withdrawals: [{ address, currency, amount }] }, token);
+await np.verifyPayout(batch.id, '123456', token);  // 2FA code
+```
+
+**Check before creating payment:**
+```typescript
+const [estimate, min] = await Promise.all([
+  np.getEstimatePrice({ amount: 100, currency_from: 'usd', currency_to: 'btc' }),
+  np.getMinAmount({ currency_from: 'usd', currency_to: 'btc' }),
+]);
+if (estimate.estimated_amount >= min.min_amount) {
+  const payment = await np.createPayment({ ... });
 }
 ```
 
 ## Subscriptions, invoices, sub-partners
 
-See [API docs](https://documenter.getpostman.com/view/7907941/2s93JusNJt) for full endpoint list. This SDK supports:
+See [API docs](https://documenter.getpostman.com/view/7907941/2s93JusNJt) for full list. This SDK supports:
 
 - **Subscriptions**: `getSubscriptions()`, `getSubscription()`, `deleteSubscription()`, `getSubscriptionPlans()`, etc.
 - **Invoices**: `createInvoice()`, `createInvoicePayment()`

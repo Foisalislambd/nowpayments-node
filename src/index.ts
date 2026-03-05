@@ -10,7 +10,9 @@ import type {
   NowPaymentsConfig,
   CreatePaymentParams,
   CreateInvoiceParams,
+  CreateInvoicePaymentParams,
   CreatePayoutParams,
+  CreatePayoutResponse,
   ValidateAddressParams,
   Payment,
   PaymentsListResponse,
@@ -89,7 +91,14 @@ export class NowPayments {
     return data;
   }
 
-  /** Get JWT token (required for payouts, custody, etc.). Token expires in 5 min. */
+  /**
+   * Get JWT token (required for payouts, custody, etc.).
+   * Token expires in 5 minutes. Never log email/password.
+   *
+   * @example
+   * const { token } = await np.getAuthToken(email, password);
+   * await np.createPayout(params, token);
+   */
   async getAuthToken(email: string, password: string): Promise<AuthResponse> {
     const { data } = await this.client.post<AuthResponse>('/v1/auth', {
       email,
@@ -100,7 +109,11 @@ export class NowPayments {
 
   /** Get single currency details (limits, etc.) */
   async getCurrency(currency: string): Promise<unknown> {
-    const { data } = await this.client.get(`/v1/currencies/${currency}`);
+    const code = currency?.trim();
+    if (!code) {
+      throw new Error('Currency code is required (e.g. "btc", "eth")');
+    }
+    const { data } = await this.client.get(`/v1/currencies/${code}`);
     return data;
   }
 
@@ -118,19 +131,30 @@ export class NowPayments {
 
   /** Get minimum payment amount for currency pair */
   async getMinAmount(params: MinAmountParams): Promise<MinAmountResponse> {
-    const { data } = await this.client.get<MinAmountResponse>('/v1/min-amount', {
-      params: {
-        currency_from: params.currency_from,
-        currency_to: params.currency_to,
-        fiat_equivalent: params.fiat_equivalent,
-        is_fixed_rate: params.is_fixed_rate,
-        is_fee_paid_by_user: params.is_fee_paid_by_user,
-      },
-    });
+    const query: Record<string, string | boolean> = {
+      currency_from: params.currency_from,
+      currency_to: params.currency_to,
+    };
+    if (params.fiat_equivalent != null) query.fiat_equivalent = params.fiat_equivalent;
+    if (params.is_fixed_rate != null) query.is_fixed_rate = params.is_fixed_rate;
+    if (params.is_fee_paid_by_user != null) query.is_fee_paid_by_user = params.is_fee_paid_by_user;
+
+    const { data } = await this.client.get<MinAmountResponse>('/v1/min-amount', { params: query });
     return data;
   }
 
-  /** Create a new payment */
+  /**
+   * Create a new payment. Returns address + amount for customer to pay.
+   *
+   * @example
+   * const p = await np.createPayment({
+   *   price_amount: 29.99,
+   *   price_currency: 'usd',
+   *   pay_currency: 'btc',
+   *   order_id: 'order-123',
+   * });
+   * // Show: Pay p.pay_amount BTC to p.pay_address
+   */
   async createPayment(params: CreatePaymentParams): Promise<Payment> {
     const { data } = await this.client.post<Payment>('/v1/payment', params);
     return data;
@@ -138,6 +162,9 @@ export class NowPayments {
 
   /** Get payment status by ID */
   async getPaymentStatus(paymentId: number | string): Promise<Payment> {
+    if (paymentId == null || String(paymentId).trim() === '') {
+      throw new Error('Payment ID is required');
+    }
     const { data } = await this.client.get<Payment>(`/v1/payment/${paymentId}`);
     return data;
   }
@@ -167,16 +194,7 @@ export class NowPayments {
   }
 
   /** Create payment for existing invoice */
-  async createInvoicePayment(params: {
-    iid: number | string;
-    pay_currency?: string;
-    purchase_id?: string;
-    order_description?: string;
-    customer_email?: string;
-    payout_address?: string;
-    payout_extra_id?: string;
-    payout_currency?: string;
-  }): Promise<Payment> {
+  async createInvoicePayment(params: CreateInvoicePaymentParams): Promise<Payment> {
     const { data } = await this.client.post<Payment>('/v1/invoice-payment', params);
     return data;
   }
@@ -302,8 +320,8 @@ export class NowPayments {
   async createPayout(
     params: CreatePayoutParams,
     jwtToken: string
-  ): Promise<unknown> {
-    const { data } = await this.client.post('/v1/payout', params, {
+  ): Promise<CreatePayoutResponse> {
+    const { data } = await this.client.post<CreatePayoutResponse>('/v1/payout', params, {
       headers: { Authorization: `Bearer ${jwtToken}` },
     });
     return data;
@@ -492,7 +510,13 @@ export class NowPayments {
     return data;
   }
 
-  /** Verify IPN callback (convenience using config ipnSecret) */
+  /**
+   * Verify IPN webhook signature. Use ipnSecret in config.
+   *
+   * @example
+   * // Express: if (np.verifyIpn(req.body, req.headers['x-nowpayments-sig']))
+   * // Fastify: if (np.verifyIpn(req.body, req.headers['x-nowpayments-sig']))
+   */
   verifyIpn(payload: string | Record<string, unknown>, signature: string): boolean {
     const secret = this.config.ipnSecret;
     if (!secret) {
