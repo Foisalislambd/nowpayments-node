@@ -252,9 +252,10 @@ export interface CreateSubPartnerPaymentParams {
   fixed_rate?: boolean;
 }
 
-/** Sub-partner payment response (wrapped in result) */
+/** Sub-partner payment response (wrapped in result). API may return string ids. */
 export interface SubPartnerPaymentResponse {
-  result: Payment & {
+  result: Omit<Payment, 'payment_id'> & {
+    payment_id: number | string;
     amount_received?: number;
     ipn_callback_url?: string | null;
     smart_contract?: string | null;

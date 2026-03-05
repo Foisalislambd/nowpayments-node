@@ -355,11 +355,11 @@ Get single subscription.
 const { result } = await np.getSubscription('1515573197');
 ```
 
-#### `deleteSubscription(id)`
-Cancel subscription.
+#### `deleteSubscription(id, jwtToken?)`
+Cancel subscription. Pass JWT when API requires it.
 
 ```typescript
-await np.deleteSubscription('1515573197');
+await np.deleteSubscription('1515573197', token);
 ```
 
 ---

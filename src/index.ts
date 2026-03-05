@@ -220,10 +220,12 @@ export class NowPayments {
     return data;
   }
 
-  /** Cancel recurring payment */
-  async deleteSubscription(id: string): Promise<{ result: string }> {
+  /** Cancel recurring payment. JWT required per API docs. */
+  async deleteSubscription(id: string, jwtToken?: string): Promise<{ result: string }> {
+    const headers = jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {};
     const { data } = await this.client.delete<{ result: string }>(
-      `/v1/subscriptions/${id}`
+      `/v1/subscriptions/${id}`,
+      { headers }
     );
     return data;
   }
