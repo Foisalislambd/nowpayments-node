@@ -1,0 +1,52 @@
+{
+  "name": "nowpayments-node",
+  "version": "1.0.0",
+  "description": "Full-featured TypeScript/Node.js SDK for NOWPayments cryptocurrency payment API",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "nowpayments",
+    "crypto",
+    "cryptocurrency",
+    "bitcoin",
+    "ethereum",
+    "payment",
+    "payment-gateway",
+    "crypto-payments",
+    "payments-api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nowpayments-node.git"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.0"
+  }
+}
