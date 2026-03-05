@@ -343,6 +343,9 @@ export class NowPayments {
     params: CreatePayoutParams,
     jwtToken: string
   ): Promise<CreatePayoutResponse> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for createPayout. Call getAuthToken first.');
+    }
     const { data } = await this.client.post<CreatePayoutResponse>('/v1/payout', params, {
       headers: { Authorization: `Bearer ${jwtToken}` },
     });
@@ -355,6 +358,9 @@ export class NowPayments {
     verificationCode: string,
     jwtToken: string
   ): Promise<string> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for verifyPayout. Call getAuthToken first.');
+    }
     const { data } = await this.client.post<string>(
       `/v1/payout/${payoutId}/verify`,
       { verification_code: verificationCode },
@@ -405,6 +411,9 @@ export class NowPayments {
 
   /** Cancel a scheduled payout (created with execute_at). Use individual payout id, not batch id. Requires JWT. */
   async cancelPayout(payoutId: string, jwtToken: string): Promise<void> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for cancelPayout. Call getAuthToken first.');
+    }
     await this.client.post(
       `/v1/payout/${payoutId}/cancel`,
       { payout_id: payoutId },
@@ -469,6 +478,9 @@ export class NowPayments {
     name: string,
     jwtToken: string
   ): Promise<{ result: { id: string; name: string; created_at: string; updated_at: string } }> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for createSubPartner. Call getAuthToken first.');
+    }
     const { data } = await this.client.post(
       '/v1/sub-partner/balance',
       { name },
@@ -494,6 +506,9 @@ export class NowPayments {
     params: CreateSubPartnerPaymentParams,
     jwtToken: string
   ): Promise<SubPartnerPaymentResponse> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for createSubPartnerPayment. Call getAuthToken first.');
+    }
     const { data } = await this.client.post<SubPartnerPaymentResponse>(
       '/v1/sub-partner/payment',
       params,
@@ -511,6 +526,9 @@ export class NowPayments {
     },
     jwtToken: string
   ): Promise<{ result: RecurringPayment }> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for createSubscription. Call getAuthToken first.');
+    }
     const { data } = await this.client.post<{ result: RecurringPayment }>(
       '/v1/subscriptions',
       params,
@@ -524,6 +542,9 @@ export class NowPayments {
     params: { currency: string; amount: number; from_id: number | string; to_id: number | string },
     jwtToken: string
   ): Promise<unknown> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for createTransfer. Call getAuthToken first.');
+    }
     const { data } = await this.client.post(
       '/v1/sub-partner/transfer',
       params,
@@ -550,6 +571,9 @@ export class NowPayments {
     params: { currency: string; amount: number; sub_partner_id: string | number },
     jwtToken: string
   ): Promise<unknown> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for deposit. Call getAuthToken first.');
+    }
     const { data } = await this.client.post(
       '/v1/sub-partner/deposit',
       params,
@@ -565,6 +589,9 @@ export class NowPayments {
     params: { amount: number; from_currency: string; to_currency: string },
     jwtToken: string
   ): Promise<unknown> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for createConversion. Call getAuthToken first.');
+    }
     const { data } = await this.client.post(
       '/v1/conversion',
       params,
@@ -578,6 +605,9 @@ export class NowPayments {
     conversionId: string,
     jwtToken: string
   ): Promise<unknown> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for getConversionStatus. Call getAuthToken first.');
+    }
     const { data } = await this.client.get(
       `/v1/conversion/${conversionId}`,
       { headers: { Authorization: `Bearer ${jwtToken}` } }

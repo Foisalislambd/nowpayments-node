@@ -184,7 +184,8 @@ export interface GetFiatPayoutsParams {
 
 /** Payment object from API */
 export interface Payment {
-  payment_id: number;
+  /** API may return number or string depending on endpoint */
+  payment_id: number | string;
   payment_status: PaymentStatus;
   pay_address: string;
   pay_amount: number;
@@ -306,6 +307,8 @@ export interface PayoutWithdrawal {
   unique_external_id?: string;
   fiat_amount?: number;
   fiat_currency?: string;
+  /** ISO date string for scheduled payout (e.g. "2024-01-15T10:00:00Z"). Cancel via cancelPayout with individual payout id. */
+  execute_at?: string;
 }
 
 /** Create payout request body */
