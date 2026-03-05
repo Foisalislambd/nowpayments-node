@@ -56,6 +56,7 @@ Based on `copied-docs.md` (official Postman docs). ✅ = implemented in this pac
 | API | Method | Package |
 |-----|--------|---------|
 | POST /v1/sub-partner/balance | createSubPartner | ✅ `createSubPartner(name, jwtToken)` |
+| POST /v1/sub-partner/payment | createSubPartnerPayment | ✅ `createSubPartnerPayment(params, jwtToken)` |
 | GET /v1/sub-partner/balance/:id | getSubPartnerBalance | ✅ |
 | GET /v1/sub-partner | getSubPartners | ✅ `getSubPartners(params?, jwtToken?)` |
 | GET /v1/sub-partner/transfers | getTransfers | ✅ `getTransfers(params?, jwtToken?)` |

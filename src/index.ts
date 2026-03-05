@@ -14,6 +14,8 @@ import type {
   CreatePayoutParams,
   CreatePayoutResponse,
   ValidateAddressParams,
+  CreateSubPartnerPaymentParams,
+  SubPartnerPaymentResponse,
   Payment,
   PaymentsListResponse,
   EstimatePriceResponse,
@@ -403,6 +405,31 @@ export class NowPayments {
       { headers: { Authorization: `Bearer ${jwtToken}` } }
     );
     return data as { result: { id: string; name: string; created_at: string; updated_at: string } };
+  }
+
+  /**
+   * Deposit with payment – top up a sub-partner's balance via crypto payment.
+   * Customer pays to the returned address; funds go to sub-partner's custody.
+   * Requires JWT.
+   *
+   * @example
+   * const { token } = await np.getAuthToken(email, password);
+   * const { result } = await np.createSubPartnerPayment(
+   *   { currency: 'trx', amount: 50, sub_partner_id: '1631380403' },
+   *   token
+   * );
+   * // Show customer: Pay result.pay_amount TRX to result.pay_address
+   */
+  async createSubPartnerPayment(
+    params: CreateSubPartnerPaymentParams,
+    jwtToken: string
+  ): Promise<SubPartnerPaymentResponse> {
+    const { data } = await this.client.post<SubPartnerPaymentResponse>(
+      '/v1/sub-partner/payment',
+      params,
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data;
   }
 
   /** Create subscription (email or custody). Requires JWT. */

@@ -244,6 +244,28 @@ export interface ValidateAddressParams {
   extra_id?: string;
 }
 
+/** Create sub-partner deposit payment (top up sub-partner balance) */
+export interface CreateSubPartnerPaymentParams {
+  currency: string;
+  amount: number;
+  sub_partner_id: string | number;
+  fixed_rate?: boolean;
+}
+
+/** Sub-partner payment response (wrapped in result) */
+export interface SubPartnerPaymentResponse {
+  result: Payment & {
+    amount_received?: number;
+    ipn_callback_url?: string | null;
+    smart_contract?: string | null;
+    network?: string;
+    network_precision?: number | null;
+    time_limit?: number | null;
+    burning_percent?: number | null;
+    expiration_estimate_date?: string;
+  };
+}
+
 /** Create payment for existing invoice */
 export interface CreateInvoicePaymentParams {
   iid: number | string;

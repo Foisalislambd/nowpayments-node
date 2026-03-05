@@ -18,6 +18,6 @@ npx tsx examples/01-create-payment.ts
 | `07-payout-flow.ts` | Validate → Create → Verify payout |
 | `08-subscription.ts` | Subscription plans & create subscription |
 | `09-ipn-webhook.ts` | IPN verification (webhook handler) |
-| `10-custody-and-balance.ts` | Balance + sub-partners |
+| `10-custody-and-balance.ts` | Balance + sub-partners + deposit with payment |
 | `11-conversions.ts` | Create conversion |
 | `basic-usage.ts` | Combined quick demo |

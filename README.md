@@ -48,7 +48,7 @@ See `examples/` for focused scripts:
 | `07-payout-flow.ts` | Payout flow |
 | `08-subscription.ts` | Subscriptions |
 | `09-ipn-webhook.ts` | IPN verification |
-| `10-custody-and-balance.ts` | Balance & custody |
+| `10-custody-and-balance.ts` | Balance, custody, deposit with payment |
 | `11-conversions.ts` | Conversions |
 
 ```bash
@@ -372,6 +372,17 @@ Create new user account.
 ```typescript
 const { result } = await np.createSubPartner('user-123', token);
 // result.id, result.name
+```
+
+#### `createSubPartnerPayment(params, jwtToken)`
+Top up sub-partner balance with a crypto payment (deposit with payment).
+
+```typescript
+const { result } = await np.createSubPartnerPayment(
+  { currency: 'trx', amount: 50, sub_partner_id: '1631380403', fixed_rate: false },
+  token
+);
+// Show customer: Pay result.pay_amount TRX to result.pay_address
 ```
 
 #### `getSubPartners(params?, jwtToken?)`
