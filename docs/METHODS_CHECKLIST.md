@@ -14,6 +14,7 @@ Based on `copied-docs.md` (official Postman docs). ✅ = implemented in this pac
 | API | Method | Package | Notes |
 |-----|--------|---------|-------|
 | GET /v1/currencies | getCurrencies | ✅ `getCurrencies(fixedRate?)` | fixed_rate param optional |
+| GET /v1/full-currencies | getFullCurrencies | ✅ `getFullCurrencies()` | Detailed currency info |
 | GET /v1/currencies/{currency} | getCurrency | ✅ `getCurrency(currency)` | |
 | GET /v1/merchant/coins | getMerchantCoins | ✅ `getMerchantCoins(fixedRate?)` | Coins from dashboard settings |
 
@@ -41,9 +42,18 @@ Based on `copied-docs.md` (official Postman docs). ✅ = implemented in this pac
 |-----|--------|---------|-------|
 | POST /v1/payout | createPayout | ✅ `createPayout(params, jwtToken)` | |
 | POST /v1/payout/:id/verify | verifyPayout | ✅ `verifyPayout(id, verificationCode, jwtToken)` | 2FA code in body |
+| POST /v1/payout/:id/cancel | cancelPayout | ✅ `cancelPayout(id, jwtToken)` | Cancel scheduled payout |
 | GET /v1/payout/:id | getPayoutStatus | ✅ `getPayoutStatus(id, jwtToken?)` | |
 | GET /v1/payout | getPayouts | ✅ `getPayouts(params?)` | |
 | POST /v1/payout/validate-address | validatePayoutAddress | ✅ | |
+
+## Fiat Payouts (JWT required)
+
+| API | Method | Package |
+|-----|--------|---------|
+| GET /v1/fiat-payouts/crypto-currencies | getFiatPayoutsCryptoCurrencies | ✅ `getFiatPayoutsCryptoCurrencies(params?, jwtToken?)` |
+| GET /v1/fiat-payouts/payment-methods | getFiatPayoutsPaymentMethods | ✅ `getFiatPayoutsPaymentMethods(params?, jwtToken?)` |
+| GET /v1/fiat-payouts | getFiatPayouts | ✅ `getFiatPayouts(params?, jwtToken?)` |
 
 ## Balance & Custody
 
@@ -67,15 +77,15 @@ Based on `copied-docs.md` (official Postman docs). ✅ = implemented in this pac
 
 ## Subscriptions (JWT required)
 
-| API | Method | Package |
-|-----|--------|---------|
-| GET /v1/subscriptions | getSubscriptions | ✅ |
-| GET /v1/subscriptions/:id | getSubscription | ✅ |
-| DELETE /v1/subscriptions/:id | deleteSubscription | ✅ |
-| POST /v1/subscriptions | createSubscription | ✅ `createSubscription(params, jwtToken)` |
-| GET /v1/subscriptions/plans | getSubscriptionPlans | ✅ |
-| GET /v1/subscriptions/plans/:id | getSubscriptionPlan | ✅ |
-| PATCH /v1/subscriptions/plans/:id | updateSubscriptionPlan | ✅ |
+| API | Method | Package | Notes |
+|-----|--------|---------|-------|
+| GET /v1/subscriptions | getSubscriptions | ✅ `getSubscriptions(params?)` | status, subscription_plan_id, is_active, limit, offset |
+| GET /v1/subscriptions/:id | getSubscription | ✅ | |
+| DELETE /v1/subscriptions/:id | deleteSubscription | ✅ `deleteSubscription(id, jwtToken?)` | |
+| POST /v1/subscriptions | createSubscription | ✅ `createSubscription(params, jwtToken)` | |
+| GET /v1/subscriptions/plans | getSubscriptionPlans | ✅ `getSubscriptionPlans(params?)` | limit, offset |
+| GET /v1/subscriptions/plans/:id | getSubscriptionPlan | ✅ | |
+| PATCH /v1/subscriptions/plans/:id | updateSubscriptionPlan | ✅ | |
 
 ## Conversions (JWT required)
 

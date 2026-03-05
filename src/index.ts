@@ -16,6 +16,9 @@ import type {
   ValidateAddressParams,
   CreateSubPartnerPaymentParams,
   SubPartnerPaymentResponse,
+  GetSubscriptionPlansParams,
+  GetSubscriptionsParams,
+  GetFiatPayoutsParams,
   Payment,
   PaymentsListResponse,
   EstimatePriceResponse,
@@ -29,6 +32,10 @@ import type {
   SubscriptionPlan,
   RecurringPayment,
   SubPartnerBalance,
+  FullCurrency,
+  FiatPayoutCryptoCurrency,
+  FiatPayoutPaymentMethod,
+  FiatPayoutRecord,
 } from './types';
 import { createHttpClient, NowPaymentsError } from './utils/http';
 import { verifyIpnSignature, createIpnSignature } from './utils/ipn';
@@ -81,6 +88,12 @@ export class NowPayments {
       '/v1/currencies',
       { params: fixedRate != null ? { fixed_rate: fixedRate } : {} }
     );
+    return data;
+  }
+
+  /** Get full currency details (id, code, name, wallet_regex, network, etc.) */
+  async getFullCurrencies(): Promise<{ currencies: FullCurrency[] }> {
+    const { data } = await this.client.get<{ currencies: FullCurrency[] }>('/v1/full-currencies');
     return data;
   }
 
@@ -158,7 +171,9 @@ export class NowPayments {
    * // Show: Pay p.pay_amount BTC to p.pay_address
    */
   async createPayment(params: CreatePaymentParams): Promise<Payment> {
-    const { data } = await this.client.post<Payment>('/v1/payment', params);
+    const body = { ...params };
+    if (body.fixed_rate != null && body.is_fixed_rate == null) body.is_fixed_rate = body.fixed_rate;
+    const { data } = await this.client.post<Payment>('/v1/payment', body);
     return data;
   }
 
@@ -204,11 +219,11 @@ export class NowPayments {
   // --- Recurring Payments (Subscriptions) ---
 
   /** List all recurring payments */
-  async getSubscriptions(): Promise<{ count: number; result: RecurringPayment[] }> {
+  async getSubscriptions(params?: GetSubscriptionsParams): Promise<{ count: number; result: RecurringPayment[] }> {
     const { data } = await this.client.get<{
       count: number;
       result: RecurringPayment[];
-    }>('/v1/subscriptions');
+    }>('/v1/subscriptions', { params: params ?? {} });
     return data;
   }
 
@@ -231,14 +246,14 @@ export class NowPayments {
   }
 
   /** List subscription plans */
-  async getSubscriptionPlans(): Promise<{
+  async getSubscriptionPlans(params?: GetSubscriptionPlansParams): Promise<{
     count: number;
     result: SubscriptionPlan[];
   }> {
     const { data } = await this.client.get<{
       count: number;
       result: SubscriptionPlan[];
-    }>('/v1/subscriptions/plans');
+    }>('/v1/subscriptions/plans', { params: params ?? {} });
     return data;
   }
 
@@ -383,6 +398,56 @@ export class NowPayments {
       params
     );
     return data;
+  }
+
+  /** Cancel a scheduled payout (created with execute_at). Use individual payout id, not batch id. Requires JWT. */
+  async cancelPayout(payoutId: string, jwtToken: string): Promise<void> {
+    await this.client.post(
+      `/v1/payout/${payoutId}/cancel`,
+      { payout_id: payoutId },
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+  }
+
+  // --- Fiat Payouts API (JWT required) ---
+
+  /** Get crypto currencies available for fiat cashout. Requires JWT. */
+  async getFiatPayoutsCryptoCurrencies(
+    params?: { provider?: string; currency?: string },
+    jwtToken?: string
+  ): Promise<{ result: FiatPayoutCryptoCurrency[] }> {
+    const headers = jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {};
+    const { data } = await this.client.get('/v1/fiat-payouts/crypto-currencies', {
+      params: params ?? {},
+      headers,
+    });
+    return data as { result: FiatPayoutCryptoCurrency[] };
+  }
+
+  /** Get payment methods for fiat payout (provider + currency). Requires JWT. */
+  async getFiatPayoutsPaymentMethods(
+    params?: { provider?: string; currency?: string },
+    jwtToken?: string
+  ): Promise<{ result: FiatPayoutPaymentMethod[] }> {
+    const headers = jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {};
+    const { data } = await this.client.get('/v1/fiat-payouts/payment-methods', {
+      params: params ?? {},
+      headers,
+    });
+    return data as { result: FiatPayoutPaymentMethod[] };
+  }
+
+  /** List fiat payouts with filters. Requires JWT. */
+  async getFiatPayouts(
+    params?: GetFiatPayoutsParams,
+    jwtToken?: string
+  ): Promise<{ result: { rows: FiatPayoutRecord[] } }> {
+    const headers = jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {};
+    const { data } = await this.client.get('/v1/fiat-payouts', {
+      params: params ?? {},
+      headers,
+    });
+    return data as { result: { rows: FiatPayoutRecord[] } };
   }
 
   /** Get custody balance (currencies + amount). Needs JWT for some setups. */

@@ -74,7 +74,10 @@ export interface CreatePaymentParams {
   payout_address?: string;
   payout_currency?: string;
   payout_extra_id?: string;
+  /** @deprecated Use is_fixed_rate */
   fixed_rate?: boolean;
+  is_fixed_rate?: boolean;
+  is_fee_paid_by_user?: boolean;
 }
 
 /** Create invoice request */
@@ -87,6 +90,96 @@ export interface CreateInvoiceParams {
   order_description?: string;
   success_url?: string;
   cancel_url?: string;
+  partially_paid_url?: string;
+  is_fixed_rate?: boolean;
+  is_fee_paid_by_user?: boolean;
+}
+
+/** Full currency details from GET /v1/full-currencies */
+export interface FullCurrency {
+  id: number;
+  code: string;
+  name: string;
+  enable: boolean;
+  wallet_regex?: string;
+  priority?: number;
+  extra_id_exists?: boolean;
+  extra_id_regex?: string | null;
+  logo_url?: string;
+  track?: boolean;
+  cg_id?: string;
+  is_maxlimit?: boolean;
+  network?: string;
+  smart_contract?: string | null;
+  network_precision?: number | null;
+  [key: string]: unknown;
+}
+
+/** Fiat payout crypto currency option */
+export interface FiatPayoutCryptoCurrency {
+  provider: string;
+  currencyCode: string;
+  currencyNetwork: string;
+  enabled: boolean;
+}
+
+/** Fiat payout payment method */
+export interface FiatPayoutPaymentMethod {
+  name: string;
+  paymentCode: string;
+  fields: Array<{ name: string; type: string; mandatory: boolean; description?: string }>;
+  provider: string;
+}
+
+/** Fiat payout record */
+export interface FiatPayoutRecord {
+  id: string;
+  provider: string;
+  requestId: string;
+  status: string;
+  fiatCurrencyCode?: string;
+  fiatAmount?: string;
+  cryptoCurrencyCode?: string;
+  cryptoCurrencyAmount?: string;
+  fiatAccountCode?: string;
+  fiatAccountNumber?: string;
+  payoutDescription?: string | null;
+  error?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** List subscription plans params */
+export interface GetSubscriptionPlansParams {
+  limit?: number;
+  offset?: number;
+}
+
+/** List subscriptions params */
+export interface GetSubscriptionsParams {
+  status?: string;
+  subscription_plan_id?: string | number;
+  is_active?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+/** List fiat payouts params */
+export interface GetFiatPayoutsParams {
+  id?: string;
+  provider?: string;
+  requestId?: string;
+  fiatCurrency?: string;
+  cryptoCurrency?: string;
+  status?: string;
+  filter?: string;
+  provider_payout_id?: string;
+  limit?: number;
+  page?: number;
+  orderBy?: string;
+  sortBy?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 /** Payment object from API */

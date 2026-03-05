@@ -17,6 +17,11 @@ async function main() {
   // Single currency info
   const btcInfo = await np.getCurrency('btc');
   console.log('\nBTC info:', btcInfo);
+
+  // Full currency details (id, name, wallet_regex, network, etc.)
+  const { currencies: full } = await np.getFullCurrencies();
+  const btcFull = full.find((c) => c.code?.toLowerCase() === 'btc');
+  console.log('\nBTC full:', btcFull);
 }
 
 main().catch(console.error);

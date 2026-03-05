@@ -107,6 +107,14 @@ Get single currency details (limits, etc.).
 const info = await np.getCurrency('btc');
 ```
 
+#### `getFullCurrencies()`
+Get detailed info for all currencies (id, code, name, wallet_regex, network, etc.).
+
+```typescript
+const { currencies } = await np.getFullCurrencies();
+// currencies[0].code, .name, .wallet_regex, .network
+```
+
 ---
 
 ### Payments (main flow)
@@ -122,6 +130,8 @@ const payment = await np.createPayment({
   order_id: 'order-12345',
   order_description: 'Monthly plan',
   ipn_callback_url: 'https://yoursite.com/webhook',  // optional
+  is_fixed_rate: true,      // optional
+  is_fee_paid_by_user: false,  // optional
 });
 
 // Show customer:
@@ -207,6 +217,9 @@ const invoice = await np.createInvoice({
   order_description: 'Premium',
   success_url: 'https://yoursite.com/success',
   cancel_url: 'https://yoursite.com/cancel',
+  partially_paid_url: 'https://yoursite.com/partial',  // optional
+  is_fixed_rate: true,   // optional
+  is_fee_paid_by_user: false,  // optional
 });
 // invoice.invoice_url → redirect customer here
 ```
@@ -263,6 +276,13 @@ Verify with 2FA (from app or email).
 await np.verifyPayout(batch.id, '123456', token);
 ```
 
+#### `cancelPayout(payoutId, jwtToken)`
+Cancel a scheduled payout (created with execute_at). Use individual payout id, not batch id.
+
+```typescript
+await np.cancelPayout('5000000000', token);
+```
+
 #### `getPayoutStatus(payoutId, jwtToken?)`
 Get payout status.
 
@@ -271,7 +291,7 @@ const status = await np.getPayoutStatus('5000000713', token);
 ```
 
 #### `getPayouts(params?)`
-List payouts.
+List crypto payouts.
 
 ```typescript
 const payouts = await np.getPayouts({
@@ -282,6 +302,38 @@ const payouts = await np.getPayouts({
   order_by: 'dateCreated',
   order: 'desc',
 });
+```
+
+---
+
+### Fiat Payouts (JWT required)
+
+#### `getFiatPayoutsCryptoCurrencies(params?, jwtToken?)`
+Get crypto currencies available for fiat cashout.
+
+```typescript
+const { result } = await np.getFiatPayoutsCryptoCurrencies({ provider: 'transfi' }, token);
+```
+
+#### `getFiatPayoutsPaymentMethods(params?, jwtToken?)`
+Get payment methods for provider + currency.
+
+```typescript
+const { result } = await np.getFiatPayoutsPaymentMethods(
+  { provider: 'transfi', currency: 'usd' },
+  token
+);
+```
+
+#### `getFiatPayouts(params?, jwtToken?)`
+List fiat payouts with filters.
+
+```typescript
+const { result } = await np.getFiatPayouts(
+  { status: 'FINISHED', limit: 10, dateFrom: '2024-01-01' },
+  token
+);
+// result.rows
 ```
 
 ---
@@ -300,11 +352,11 @@ const balance = await np.getBalance(token);
 
 ### Subscriptions (recurring)
 
-#### `getSubscriptionPlans()`
+#### `getSubscriptionPlans(params?)`
 List subscription plans.
 
 ```typescript
-const { result, count } = await np.getSubscriptionPlans();
+const { result, count } = await np.getSubscriptionPlans({ limit: 10, offset: 0 });
 ```
 
 #### `getSubscriptionPlan(id)`
@@ -341,11 +393,17 @@ const { result } = await np.createSubscription({
 }, token);
 ```
 
-#### `getSubscriptions()`
+#### `getSubscriptions(params?)`
 List recurring payments.
 
 ```typescript
-const { result, count } = await np.getSubscriptions();
+const { result, count } = await np.getSubscriptions({
+  status: 'PAID',
+  subscription_plan_id: '111394288',
+  is_active: true,
+  limit: 10,
+  offset: 0,
+});
 ```
 
 #### `getSubscription(id)`
