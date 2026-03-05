@@ -33,6 +33,31 @@ const np = new NowPayments({
 
 ---
 
+## Separate examples
+
+See `examples/` for focused scripts:
+
+| Example | Description |
+|---------|-------------|
+| `01-create-payment.ts` | Create payment |
+| `02-check-payment-status.ts` | Check status |
+| `03-list-payments.ts` | List payments |
+| `04-create-invoice.ts` | Invoice (redirect) |
+| `05-estimate-and-min-amount.ts` | Price estimate |
+| `06-get-currencies.ts` | Currencies |
+| `07-payout-flow.ts` | Payout flow |
+| `08-subscription.ts` | Subscriptions |
+| `09-ipn-webhook.ts` | IPN verification |
+| `10-custody-and-balance.ts` | Balance & custody |
+| `11-conversions.ts` | Conversions |
+
+```bash
+export NOWPAYMENTS_API_KEY=your_key
+npx tsx examples/01-create-payment.ts
+```
+
+---
+
 ## Full method guide (with examples)
 
 ### Auth & status
