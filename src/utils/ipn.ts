@@ -1,9 +1,27 @@
 /**
  * IPN (Instant Payment Notification) verification utilities
+ * Matches official docs: sort keys recursively, then HMAC-SHA512
  * @see https://nowpayments.io/help/payments/api
  */
 
 import * as crypto from 'crypto';
+
+/** Recursively sort object keys (matches NOWPayments IPN spec) */
+function sortObject(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.keys(obj)
+    .sort()
+    .reduce(
+      (result, key) => {
+        const val = obj[key];
+        result[key] =
+          val != null && typeof val === 'object' && !Array.isArray(val)
+            ? (sortObject(val as Record<string, unknown>) as unknown)
+            : val;
+        return result;
+      },
+      {} as Record<string, unknown>
+    );
+}
 
 /**
  * Verify IPN callback signature from NOWPayments.
@@ -24,15 +42,15 @@ export function verifyIpnSignature(
   }
 
   try {
-    let jsonString: string;
+    let obj: Record<string, unknown>;
     if (typeof payload === 'string') {
-      const parsed = JSON.parse(payload) as Record<string, unknown>;
-      jsonString = JSON.stringify(parsed, Object.keys(parsed).sort());
+      obj = JSON.parse(payload) as Record<string, unknown>;
     } else if (payload && typeof payload === 'object') {
-      jsonString = JSON.stringify(payload, Object.keys(payload).sort());
+      obj = payload;
     } else {
       return false;
     }
+    const jsonString = JSON.stringify(sortObject(obj));
 
     const hmac = crypto.createHmac('sha512', ipnSecret.trim());
     hmac.update(jsonString);
@@ -55,7 +73,7 @@ export function createIpnSignature(
   payload: Record<string, unknown>,
   ipnSecret: string
 ): string {
-  const jsonString = JSON.stringify(payload, Object.keys(payload).sort());
+  const jsonString = JSON.stringify(sortObject(payload));
   const hmac = crypto.createHmac('sha512', ipnSecret.trim());
   hmac.update(jsonString);
   return hmac.digest('hex');

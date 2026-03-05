@@ -91,11 +91,16 @@ console.log(`100 USD ≈ ${estimate.estimated_amount} BTC`);
 | `getEstimatePrice(params)` | Convert fiat → crypto amount |
 | `getMinAmount(params)` | Get minimum payment for currency pair |
 | `updatePaymentEstimate(id)` | Refresh payment amount before expiry |
-| `createPayout(params, jwt?)` | Mass payout (requires JWT token) |
-| `verifyPayout(id)` | Verify payout |
+| `getAuthToken(email, password)` | Get JWT (expires 5 min, needed for payouts) |
+| `createPayout(params, jwt)` | Mass payout (JWT required) |
+| `verifyPayout(id, code, jwt)` | Verify payout with 2FA code |
+| `getPayoutStatus(id)`, `getPayouts(params)` | Payout status & list |
+| `validatePayoutAddress(params)` | Check address before payout |
+| `getBalance(jwt?)` | Custody balance |
 | `getStatus()` | Check if API is up |
-| Subscriptions: `getSubscriptions()`, `getSubscriptionPlans()`, etc. | Recurring payments |
-| Sub-partners: `getSubPartners()`, `getSubPartnerBalance()`, etc. | Customer management |
+| Subscriptions: `createSubscription()`, `getSubscriptions()`, etc. | Recurring payments |
+| Custody: `createSubPartner()`, `createTransfer()`, `writeOff()`, `deposit()` | User balances |
+| Conversions: `createConversion()`, `getConversionStatus()`, `getConversions()` | In-account exchange |
 
 ## Helpers (human-friendly)
 

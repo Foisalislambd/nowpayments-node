@@ -151,6 +151,9 @@ export interface EstimateParams {
 export interface MinAmountParams {
   currency_from: string;
   currency_to: string;
+  fiat_equivalent?: string;
+  is_fixed_rate?: boolean;
+  is_fee_paid_by_user?: boolean;
 }
 
 /** Invoice response */
@@ -200,7 +203,10 @@ export interface PayoutWithdrawal {
   address: string;
   currency: string;
   amount: number;
+  extra_id?: string;
   ipn_callback_url?: string;
+  payout_description?: string;
+  unique_external_id?: string;
   fiat_amount?: number;
   fiat_currency?: string;
 }
@@ -208,7 +214,20 @@ export interface PayoutWithdrawal {
 /** Create payout request body */
 export interface CreatePayoutParams {
   ipn_callback_url?: string;
+  payout_description?: string;
   withdrawals: PayoutWithdrawal[];
+}
+
+/** Auth response (JWT token for payouts, etc.) */
+export interface AuthResponse {
+  token: string;
+}
+
+/** Validate address params */
+export interface ValidateAddressParams {
+  address: string;
+  currency: string;
+  extra_id?: string;
 }
 
 /** API error response */

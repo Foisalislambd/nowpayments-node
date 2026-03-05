@@ -11,6 +11,7 @@ import type {
   CreatePaymentParams,
   CreateInvoiceParams,
   CreatePayoutParams,
+  ValidateAddressParams,
   Payment,
   PaymentsListResponse,
   EstimatePriceResponse,
@@ -20,6 +21,7 @@ import type {
   MinAmountParams,
   InvoiceResponse,
   ApiStatusResponse,
+  AuthResponse,
   SubscriptionPlan,
   RecurringPayment,
   SubPartnerBalance,
@@ -70,10 +72,29 @@ export class NowPayments {
   }
 
   /** Get list of available crypto currencies (e.g. btc, eth, usdt) */
-  async getCurrencies(): Promise<{ currencies: string[] }> {
+  async getCurrencies(fixedRate?: boolean): Promise<{ currencies: string[] }> {
     const { data } = await this.client.get<{ currencies: string[] }>(
-      '/v1/currencies'
+      '/v1/currencies',
+      { params: fixedRate != null ? { fixed_rate: fixedRate } : {} }
     );
+    return data;
+  }
+
+  /** Get merchant checked currencies (from coins settings) */
+  async getMerchantCoins(fixedRate?: boolean): Promise<{ currencies: string[] }> {
+    const { data } = await this.client.get<{ currencies: string[] }>(
+      '/v1/merchant/coins',
+      { params: fixedRate != null ? { fixed_rate: fixedRate } : {} }
+    );
+    return data;
+  }
+
+  /** Get JWT token (required for payouts, custody, etc.). Token expires in 5 min. */
+  async getAuthToken(email: string, password: string): Promise<AuthResponse> {
+    const { data } = await this.client.post<AuthResponse>('/v1/auth', {
+      email,
+      password,
+    });
     return data;
   }
 
@@ -101,6 +122,9 @@ export class NowPayments {
       params: {
         currency_from: params.currency_from,
         currency_to: params.currency_to,
+        fiat_equivalent: params.fiat_equivalent,
+        is_fixed_rate: params.is_fixed_rate,
+        is_fee_paid_by_user: params.is_fee_paid_by_user,
       },
     });
     return data;
@@ -220,9 +244,15 @@ export class NowPayments {
 
   // --- Sub-Partner / Customer Management ---
 
-  /** List sub-partners */
-  async getSubPartners(): Promise<unknown> {
-    const { data } = await this.client.get('/v1/sub-partner');
+  /** List sub-partners (users). JWT required for custody API. */
+  async getSubPartners(
+    params?: { id?: number | number[]; offset?: number; limit?: number; order?: 'ASC' | 'DESC' },
+    jwtToken?: string
+  ): Promise<unknown> {
+    const { data } = await this.client.get('/v1/sub-partner', {
+      params: params ?? {},
+      headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {},
+    });
     return data;
   }
 
@@ -236,41 +266,230 @@ export class NowPayments {
     return data;
   }
 
-  /** List transfers */
-  async getTransfers(): Promise<unknown> {
-    const { data } = await this.client.get('/v1/sub-partner/transfers');
+  /** List transfers. JWT required for custody. */
+  async getTransfers(
+    params?: {
+      id?: number | number[];
+      status?: string | string[];
+      limit?: number;
+      offset?: number;
+      order?: 'ASC' | 'DESC';
+    },
+    jwtToken?: string
+  ): Promise<unknown> {
+    const { data } = await this.client.get('/v1/sub-partner/transfers', {
+      params: params ?? {},
+      headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {},
+    });
     return data;
   }
 
-  /** Get single transfer */
-  async getTransfer(id: string): Promise<unknown> {
+  /** Get single transfer. JWT required for custody. */
+  async getTransfer(
+    id: string,
+    jwtToken?: string
+  ): Promise<unknown> {
     const { data } = await this.client.get(
-      `/v1/sub-partner/transfer/${id}`
+      `/v1/sub-partner/transfer/${id}`,
+      { headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {} }
     );
     return data;
   }
 
   /**
-   * Create mass payout. Requires JWT token (get from Mass Payouts / auth flow).
-   * Pass jwtToken when you have it.
+   * Create mass payout. Requires JWT (call getAuthToken first).
    */
   async createPayout(
     params: CreatePayoutParams,
+    jwtToken: string
+  ): Promise<unknown> {
+    const { data } = await this.client.post('/v1/payout', params, {
+      headers: { Authorization: `Bearer ${jwtToken}` },
+    });
+    return data;
+  }
+
+  /** Verify payout with 2FA code. Requires JWT. */
+  async verifyPayout(
+    payoutId: string,
+    verificationCode: string,
+    jwtToken: string
+  ): Promise<string> {
+    const { data } = await this.client.post<string>(
+      `/v1/payout/${payoutId}/verify`,
+      { verification_code: verificationCode },
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data as string;
+  }
+
+  /** Get payout status */
+  async getPayoutStatus(
+    payoutId: string,
     jwtToken?: string
   ): Promise<unknown> {
     const config = jwtToken
       ? { headers: { Authorization: `Bearer ${jwtToken}` } }
       : {};
-    const { data } = await this.client.post('/v1/payout', params, config);
+    const { data } = await this.client.get(`/v1/payout/${payoutId}`, config);
     return data;
   }
 
-  /** Verify payout by ID */
-  async verifyPayout(payoutId: string): Promise<string> {
-    const { data } = await this.client.post<string>(
-      `/v1/payout/${payoutId}/verify`
+  /** List payouts */
+  async getPayouts(params?: {
+    batch_id?: string;
+    status?: string;
+    order_by?: string;
+    order?: 'asc' | 'desc';
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
+    page?: number;
+  }): Promise<unknown> {
+    const { data } = await this.client.get('/v1/payout', {
+      params: params ?? {},
+    });
+    return data;
+  }
+
+  /** Validate payout address before creating payout */
+  async validatePayoutAddress(
+    params: ValidateAddressParams
+  ): Promise<unknown> {
+    const { data } = await this.client.post(
+      '/v1/payout/validate-address',
+      params
     );
-    return data as string;
+    return data;
+  }
+
+  /** Get custody balance (currencies + amount). Needs JWT for some setups. */
+  async getBalance(jwtToken?: string): Promise<unknown> {
+    const config = jwtToken
+      ? { headers: { Authorization: `Bearer ${jwtToken}` } }
+      : {};
+    const { data } = await this.client.get('/v1/balance', config);
+    return data;
+  }
+
+  // --- Custody / Sub-Partner (requires JWT) ---
+
+  /** Create new user account (sub-partner) */
+  async createSubPartner(
+    name: string,
+    jwtToken: string
+  ): Promise<{ result: { id: string; name: string; created_at: string; updated_at: string } }> {
+    const { data } = await this.client.post(
+      '/v1/sub-partner/balance',
+      { name },
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data as { result: { id: string; name: string; created_at: string; updated_at: string } };
+  }
+
+  /** Create subscription (email or custody). Requires JWT. */
+  async createSubscription(
+    params: {
+      subscription_plan_id: number | string;
+      sub_partner_id?: number | string;
+      email?: string;
+    },
+    jwtToken: string
+  ): Promise<{ result: RecurringPayment }> {
+    const { data } = await this.client.post<{ result: RecurringPayment }>(
+      '/v1/subscriptions',
+      params,
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data;
+  }
+
+  /** Transfer between user accounts. Requires JWT. */
+  async createTransfer(
+    params: { currency: string; amount: number; from_id: number; to_id: number },
+    jwtToken: string
+  ): Promise<unknown> {
+    const { data } = await this.client.post(
+      '/v1/sub-partner/transfer',
+      params,
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data;
+  }
+
+  /** Write off from user to master account. Requires JWT. */
+  async writeOff(
+    params: { currency: string; amount: number; sub_partner_id: string },
+    jwtToken: string
+  ): Promise<unknown> {
+    const { data } = await this.client.post(
+      '/v1/sub-partner/write-off',
+      params,
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data;
+  }
+
+  /** Deposit from master to user account. Requires JWT. */
+  async deposit(
+    params: { currency: string; amount: number; sub_partner_id: string },
+    jwtToken: string
+  ): Promise<unknown> {
+    const { data } = await this.client.post(
+      '/v1/sub-partner/deposit',
+      params,
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data;
+  }
+
+  // --- Conversions (custody, requires JWT) ---
+
+  /** Create conversion within custody account */
+  async createConversion(
+    params: { amount: number; from_currency: string; to_currency: string },
+    jwtToken: string
+  ): Promise<unknown> {
+    const { data } = await this.client.post(
+      '/v1/conversion',
+      params,
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data;
+  }
+
+  /** Get conversion status */
+  async getConversionStatus(
+    conversionId: string,
+    jwtToken: string
+  ): Promise<unknown> {
+    const { data } = await this.client.get(
+      `/v1/conversion/${conversionId}`,
+      { headers: { Authorization: `Bearer ${jwtToken}` } }
+    );
+    return data;
+  }
+
+  /** List conversions */
+  async getConversions(
+    params?: {
+      id?: number | number[];
+      status?: string | string[];
+      from_currency?: string;
+      to_currency?: string;
+      created_at_from?: string;
+      created_at_to?: string;
+      limit?: number;
+      offset?: number;
+      order?: 'ASC' | 'DESC';
+    },
+    jwtToken?: string
+  ): Promise<unknown> {
+    const { data } = await this.client.get('/v1/conversion', {
+      params: params ?? {},
+      headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {},
+    });
+    return data;
   }
 
   /** Verify IPN callback (convenience using config ipnSecret) */
