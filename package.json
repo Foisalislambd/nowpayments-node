@@ -32,11 +32,15 @@
     "crypto-payments",
     "payments-api"
   ],
-  "author": "",
+  "author": "Foisalislambd (https://github.com/Foisalislambd)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/nowpayments-node.git"
+    "url": "https://github.com/Foisalislambd/nowpayments-node.git"
+  },
+  "homepage": "https://github.com/Foisalislambd/nowpayments-node#readme",
+  "bugs": {
+    "url": "https://github.com/Foisalislambd/nowpayments-node/issues"
   },
   "engines": {
     "node": ">=16"
