@@ -171,8 +171,11 @@ export class NowPayments {
    * // Show: Pay p.pay_amount BTC to p.pay_address
    */
   async createPayment(params: CreatePaymentParams): Promise<Payment> {
-    const body = { ...params };
-    if (body.fixed_rate != null && body.is_fixed_rate == null) body.is_fixed_rate = body.fixed_rate;
+    const body = { ...params } as Record<string, unknown>;
+    if (body.fixed_rate != null && body.is_fixed_rate == null) {
+      body.is_fixed_rate = body.fixed_rate;
+      delete body.fixed_rate;
+    }
     const { data } = await this.client.post<Payment>('/v1/payment', body);
     return data;
   }

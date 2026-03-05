@@ -247,7 +247,8 @@ export interface EstimateParams {
 export interface MinAmountParams {
   currency_from: string;
   currency_to: string;
-  fiat_equivalent?: string;
+  /** Currency code (e.g. 'usd') for fiat equivalent in response, or true to include */
+  fiat_equivalent?: string | boolean;
   is_fixed_rate?: boolean;
   is_fee_paid_by_user?: boolean;
 }
