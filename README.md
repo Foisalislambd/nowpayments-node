@@ -101,8 +101,7 @@ npx tsx examples/01-create-payment.ts
 
 ## 📖 API Reference
 
-<details>
-<summary><b>Auth & Status</b></summary>
+### Auth & Status
 
 #### `getStatus()`
 ```typescript
@@ -115,42 +114,32 @@ const status = await np.getStatus();
 const { token } = await np.getAuthToken('your@email.com', 'password');
 // Use token for payouts, custody, etc. Expires in 5 min.
 ```
-</details>
 
-<details>
-<summary><b>Currencies</b></summary>
+### Currencies
 
 - `getCurrencies(fixedRate?)` — List available crypto
 - `getFullCurrencies()` — Detailed info (id, code, name, wallet_regex, network)
 - `getMerchantCoins(fixedRate?)` — From dashboard settings
 - `getCurrency(currency)` — Single currency details
-</details>
 
-<details>
-<summary><b>Payments</b></summary>
+### Payments
 
 - `createPayment(params)` — Create payment → get pay address
 - `getPaymentStatus(paymentId)` — Check status
 - `getPayments(params?)` — List (paginated)
 - `updatePaymentEstimate(paymentId)` — Refresh amount before expiry
-</details>
 
-<details>
-<summary><b>Price & Minimum</b></summary>
+### Price & Minimum
 
 - `getEstimatePrice(params)` — Fiat → crypto amount
 - `getMinAmount(params)` — Min payment for currency pair
-</details>
 
-<details>
-<summary><b>Invoices</b></summary>
+### Invoices
 
 - `createInvoice(params)` — Create invoice URL
 - `createInvoicePayment(params)` — Payment for existing invoice
-</details>
 
-<details>
-<summary><b>Payouts (JWT)</b></summary>
+### Payouts (JWT)
 
 - `validatePayoutAddress(params)` — Validate before payout
 - `createPayout(params, jwtToken)` — Mass payout
@@ -158,45 +147,35 @@ const { token } = await np.getAuthToken('your@email.com', 'password');
 - `cancelPayout(id, jwtToken)` — Cancel scheduled (use individual payout id)
 - `getPayoutStatus(id, jwtToken?)` — Status
 - `getPayouts(params?)` — List
-</details>
 
-<details>
-<summary><b>Fiat Payouts (JWT)</b></summary>
+### Fiat Payouts (JWT)
 
 - `getFiatPayoutsCryptoCurrencies(params?, jwtToken?)`
 - `getFiatPayoutsPaymentMethods(params?, jwtToken?)`
 - `getFiatPayouts(params?, jwtToken?)`
-</details>
 
-<details>
-<summary><b>Subscriptions</b></summary>
+### Subscriptions
 
 - `getSubscriptionPlans(params?)` / `getSubscriptionPlan(id)`
 - `updateSubscriptionPlan(id, updates)`
 - `createSubscription(params, jwtToken)`
 - `getSubscriptions(params?)` / `getSubscription(id)`
 - `deleteSubscription(id, jwtToken?)`
-</details>
 
-<details>
-<summary><b>Custody / Sub-partners (JWT)</b></summary>
+### Custody / Sub-partners (JWT)
 
 - `createSubPartner(name, jwtToken)`
 - `createSubPartnerPayment(params, jwtToken)` — Deposit with payment
 - `getSubPartners(params?, jwtToken?)` / `getSubPartnerBalance(id)`
 - `createTransfer(params, jwtToken)` / `deposit(params, jwtToken)` / `writeOff(params, jwtToken)`
 - `getTransfers(params?, jwtToken?)` / `getTransfer(id, jwtToken?)`
-</details>
 
-<details>
-<summary><b>Conversions (JWT)</b></summary>
+### Conversions (JWT)
 
 - `createConversion(params, jwtToken)`
 - `getConversionStatus(id, jwtToken)` / `getConversions(params?, jwtToken?)`
-</details>
 
-<details>
-<summary><b>IPN / Webhooks</b></summary>
+### IPN / Webhooks
 
 ```typescript
 // With instance (needs ipnSecret in config):
@@ -208,10 +187,8 @@ if (np.verifyIpn(req.body, req.headers['x-nowpayments-sig'])) {
 import { verifyIpnSignature } from 'nowpayments-node';
 verifyIpnSignature(req.body, sig, 'SECRET');
 ```
-</details>
 
-<details>
-<summary><b>Helpers</b></summary>
+### Helpers
 
 ```typescript
 import {
@@ -223,10 +200,8 @@ import {
   PAYMENT_STATUSES,
 } from 'nowpayments-node';
 ```
-</details>
 
-<details>
-<summary><b>Errors</b></summary>
+### Errors
 
 ```typescript
 import { NowPaymentsError } from 'nowpayments-node';
@@ -239,7 +214,6 @@ try {
   }
 }
 ```
-</details>
 
 ---
 

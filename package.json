@@ -1,6 +1,6 @@
 {
   "name": "nowpayments-node",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Full-featured TypeScript/Node.js SDK for NOWPayments cryptocurrency payment API",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
