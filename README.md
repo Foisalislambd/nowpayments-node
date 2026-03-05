@@ -1,39 +1,93 @@
 # nowpayments-node
 
-**A simple, human-friendly Node.js SDK for [NOWPayments](https://nowpayments.io/)** — accept 300+ cryptocurrencies with automatic conversion to your wallet.
+**Full-featured Node.js SDK for [NOWPayments](https://nowpayments.io/)** — accept 300+ cryptocurrencies with auto-conversion to your wallet.
 
-## 3-step flow
+---
 
-```
-1. createPayment()  →  Get address for customer
-2. Customer pays    →  You receive coins
-3. getPaymentStatus() or IPN webhook  →  Know when done
-```
-
-## Setup
-
-**1. Get API key** → [account.nowpayments.io](https://account.nowpayments.io) ([sandbox](https://account-sandbox.nowpayments.io) for testing)
-
-**2. Install**
+## Quick start
 
 ```bash
 npm install nowpayments-node
 ```
-
-**3. Init**
 
 ```typescript
 import { NowPayments } from 'nowpayments-node';
 
 const np = new NowPayments({
   apiKey: process.env.NOWPAYMENTS_API_KEY!,
-  sandbox: true,  // false for real payments
+  sandbox: true,  // false for production
 });
 ```
 
-## Quick Examples
+---
 
-### Create a payment (customer pays in crypto)
+## Config
+
+| Option     | Required | Default | Description |
+|------------|----------|---------|-------------|
+| `apiKey`   | Yes      | —       | From [Dashboard](https://account.nowpayments.io) |
+| `sandbox`  | No       | `false` | Use sandbox API |
+| `timeout`  | No       | `30000` | Request timeout (ms) |
+| `ipnSecret`| No       | —       | For webhook verification |
+| `baseUrl`  | No       | —       | Override API URL |
+
+---
+
+## Full method guide (with examples)
+
+### Auth & status
+
+#### `getStatus()`
+Check if API is up.
+
+```typescript
+const status = await np.getStatus();
+// { message: 'OK' }
+```
+
+#### `getAuthToken(email, password)`
+Get JWT token for payouts, custody, etc. Expires in 5 minutes.
+
+```typescript
+const { token } = await np.getAuthToken('your@email.com', 'password');
+// Use token with createPayout, verifyPayout, createSubPartner, etc.
+```
+
+---
+
+### Currencies
+
+#### `getCurrencies(fixedRate?)`
+List all available crypto for payments.
+
+```typescript
+const { currencies } = await np.getCurrencies();
+// ['btc', 'eth', 'usdt', 'trx', ...]
+
+// With fixed rate min/max:
+const { currencies } = await np.getCurrencies(true);
+```
+
+#### `getMerchantCoins(fixedRate?)`
+Currencies from your dashboard "coins settings".
+
+```typescript
+const { currencies } = await np.getMerchantCoins();
+```
+
+#### `getCurrency(currency)`
+Get single currency details (limits, etc.).
+
+```typescript
+const info = await np.getCurrency('btc');
+```
+
+---
+
+### Payments (main flow)
+
+#### `createPayment(params)`
+Create payment → get address for customer to pay.
 
 ```typescript
 const payment = await np.createPayment({
@@ -41,31 +95,52 @@ const payment = await np.createPayment({
   price_currency: 'usd',
   pay_currency: 'btc',
   order_id: 'order-12345',
-  order_description: 'Monthly subscription',
-  ipn_callback_url: 'https://yoursite.com/webhook',
+  order_description: 'Monthly plan',
+  ipn_callback_url: 'https://yoursite.com/webhook',  // optional
 });
 
-// Show customer where to pay:
+// Show customer:
 console.log(`Pay ${payment.pay_amount} ${payment.pay_currency.toUpperCase()}`);
-console.log(`Address: ${payment.pay_address}`);
+console.log(`To: ${payment.pay_address}`);
 ```
 
-### Check payment status & show friendly message
+#### `getPaymentStatus(paymentId)`
+Check if payment received.
 
 ```typescript
-import { getStatusLabel, isPaymentComplete } from 'nowpayments-node';
-
-const payment = await np.getPaymentStatus(paymentId);
-
-// "Awaiting payment" | "Completed" | "Expired" etc.
-console.log(getStatusLabel(payment.payment_status));
-
-if (isPaymentComplete(payment.payment_status)) {
-  console.log('Payment done! Fulfill the order.');
-}
+const payment = await np.getPaymentStatus(5524759814);
+console.log(payment.payment_status);  // 'waiting' | 'finished' | 'expired' | ...
 ```
 
-### Get price in crypto before creating payment
+#### `getPayments(params?)`
+List all payments (paginated).
+
+```typescript
+const list = await np.getPayments({
+  limit: 10,
+  page: 0,
+  sortBy: 'created_at',
+  orderBy: 'desc',
+  dateFrom: '2024-01-01',
+  dateTo: '2024-12-31',
+});
+// list.data, list.total, list.pagesCount
+```
+
+#### `updatePaymentEstimate(paymentId)`
+Refresh amount before expiry (rate may change).
+
+```typescript
+const result = await np.updatePaymentEstimate(paymentId);
+// result.pay_amount, result.expiration_estimate_date
+```
+
+---
+
+### Price & minimum
+
+#### `getEstimatePrice(params)`
+Convert fiat → crypto amount.
 
 ```typescript
 const estimate = await np.getEstimatePrice({
@@ -73,76 +148,354 @@ const estimate = await np.getEstimatePrice({
   currency_from: 'usd',
   currency_to: 'btc',
 });
+// estimate.estimated_amount
 console.log(`100 USD ≈ ${estimate.estimated_amount} BTC`);
 ```
 
-## Config options
+#### `getMinAmount(params)`
+Get minimum payment for currency pair.
 
-| Option     | Required | Default   | Description                              |
-|-----------|----------|-----------|------------------------------------------|
-| `apiKey`  | Yes      | —         | From [Dashboard](https://account.nowpayments.io) |
-| `sandbox` | No       | `false`   | Use sandbox for testing                  |
-| `timeout` | No       | `30000`   | Request timeout (ms)                     |
-| `ipnSecret` | No     | —         | For webhook verification                 |
-| `baseUrl` | No       | —         | Override API URL                         |
+```typescript
+const min = await np.getMinAmount({
+  currency_from: 'usd',
+  currency_to: 'btc',
+  fiat_equivalent: 'usd',  // optional
+  is_fixed_rate: false,    // optional
+  is_fee_paid_by_user: false,  // optional
+});
+// min.min_amount, min.fiat_equivalent
+```
 
-## Main methods
+---
 
-| Method | What it does |
-|--------|--------------|
-| `createPayment(params)` | Create payment → get address for customer |
-| `getPaymentStatus(id)` | Check if payment received |
-| `getPayments(params?)` | List all payments (paginated) |
-| `createInvoice(params)` | Create invoice → get URL to redirect customer |
-| `createInvoicePayment(params)` | Create payment for existing invoice |
-| `getCurrencies()` | List supported cryptos (btc, eth, etc.) |
-| `getEstimatePrice(params)` | Convert fiat → crypto amount |
-| `getMinAmount(params)` | Get minimum payment for currency pair |
-| `updatePaymentEstimate(id)` | Refresh payment amount before expiry |
-| `getAuthToken(email, password)` | Get JWT (expires 5 min, needed for payouts) |
-| `createPayout(params, jwt)` | Mass payout (JWT required) |
-| `verifyPayout(id, code, jwt)` | Verify payout with 2FA code |
-| `getPayoutStatus(id)`, `getPayouts(params)` | Payout status & list |
-| `validatePayoutAddress(params)` | Check address before payout |
-| `getBalance(jwt?)` | Custody balance |
-| `getStatus()` | Check if API is up |
-| Subscriptions: `createSubscription()`, `getSubscriptions()`, etc. | Recurring payments |
-| Custody: `createSubPartner()`, `createTransfer()`, `writeOff()`, `deposit()` | User balances |
-| Conversions: `createConversion()`, `getConversionStatus()`, `getConversions()` | In-account exchange |
+### Invoices
 
-## Helpers (human-friendly)
+#### `createInvoice(params)`
+Create invoice → redirect customer to invoice URL.
+
+```typescript
+const invoice = await np.createInvoice({
+  price_amount: 49.99,
+  price_currency: 'usd',
+  pay_currency: 'btc',  // optional
+  order_id: 'inv-001',
+  order_description: 'Premium',
+  success_url: 'https://yoursite.com/success',
+  cancel_url: 'https://yoursite.com/cancel',
+});
+// invoice.invoice_url → redirect customer here
+```
+
+#### `createInvoicePayment(params)`
+Create payment for existing invoice.
+
+```typescript
+const payment = await np.createInvoicePayment({
+  iid: invoiceId,
+  pay_currency: 'btc',
+  purchase_id: 'purchase-123',
+  order_description: 'Item',
+  customer_email: 'user@example.com',
+});
+```
+
+---
+
+### Payouts (JWT required)
+
+#### `validatePayoutAddress(params)`
+Check address before payout.
+
+```typescript
+try {
+  await np.validatePayoutAddress({ address: '0x...', currency: 'eth' });
+  // valid
+} catch {
+  // invalid
+}
+```
+
+#### `createPayout(params, jwtToken)`
+Create mass payout.
+
+```typescript
+const { token } = await np.getAuthToken(email, password);
+
+const batch = await np.createPayout({
+  ipn_callback_url: 'https://yoursite.com/payout-webhook',
+  withdrawals: [
+    { address: 'TEmGw...', currency: 'trx', amount: 200 },
+    { address: '0x1EB...', currency: 'eth', amount: 0.1 },
+  ],
+}, token);
+// batch.id, batch.withdrawals
+```
+
+#### `verifyPayout(payoutId, verificationCode, jwtToken)`
+Verify with 2FA (from app or email).
+
+```typescript
+await np.verifyPayout(batch.id, '123456', token);
+```
+
+#### `getPayoutStatus(payoutId, jwtToken?)`
+Get payout status.
+
+```typescript
+const status = await np.getPayoutStatus('5000000713', token);
+```
+
+#### `getPayouts(params?)`
+List payouts.
+
+```typescript
+const payouts = await np.getPayouts({
+  batch_id: '5000000713',
+  status: 'finished',
+  limit: 10,
+  page: 0,
+  order_by: 'dateCreated',
+  order: 'desc',
+});
+```
+
+---
+
+### Balance
+
+#### `getBalance(jwtToken?)`
+Get custody balance (currencies + amount).
+
+```typescript
+const balance = await np.getBalance(token);
+// { eth: { amount: 0.5, pendingAmount: 0 }, trx: { ... } }
+```
+
+---
+
+### Subscriptions (recurring)
+
+#### `getSubscriptionPlans()`
+List subscription plans.
+
+```typescript
+const { result, count } = await np.getSubscriptionPlans();
+```
+
+#### `getSubscriptionPlan(id)`
+Get single plan.
+
+```typescript
+const { result } = await np.getSubscriptionPlan('76215585');
+```
+
+#### `updateSubscriptionPlan(id, updates)`
+Update plan.
+
+```typescript
+await np.updateSubscriptionPlan('76215585', {
+  amount: 9.99,
+  interval_day: '30',
+});
+```
+
+#### `createSubscription(params, jwtToken)`
+Create subscription (email or custody user).
+
+```typescript
+// Email subscription:
+const { result } = await np.createSubscription({
+  subscription_plan_id: 76215585,
+  email: 'customer@example.com',
+}, token);
+
+// Custody (sub-partner):
+const { result } = await np.createSubscription({
+  subscription_plan_id: 76215585,
+  sub_partner_id: '111394288',
+}, token);
+```
+
+#### `getSubscriptions()`
+List recurring payments.
+
+```typescript
+const { result, count } = await np.getSubscriptions();
+```
+
+#### `getSubscription(id)`
+Get single subscription.
+
+```typescript
+const { result } = await np.getSubscription('1515573197');
+```
+
+#### `deleteSubscription(id)`
+Cancel subscription.
+
+```typescript
+await np.deleteSubscription('1515573197');
+```
+
+---
+
+### Custody / Sub-partners (JWT for most)
+
+#### `createSubPartner(name, jwtToken)`
+Create new user account.
+
+```typescript
+const { result } = await np.createSubPartner('user-123', token);
+// result.id, result.name
+```
+
+#### `getSubPartners(params?, jwtToken?)`
+List users.
+
+```typescript
+const users = await np.getSubPartners(
+  { offset: 0, limit: 10, order: 'DESC' },
+  token
+);
+```
+
+#### `getSubPartnerBalance(subPartnerId)`
+Get user balance.
+
+```typescript
+const { result } = await np.getSubPartnerBalance('111394288');
+// result.balances.usdtbsc.amount
+```
+
+#### `createTransfer(params, jwtToken)`
+Transfer between user accounts.
+
+```typescript
+await np.createTransfer({
+  currency: 'trx',
+  amount: 0.3,
+  from_id: 111394288,
+  to_id: 5209391548,
+}, token);
+```
+
+#### `deposit(params, jwtToken)`
+Deposit from master to user.
+
+```typescript
+await np.deposit({
+  currency: 'trx',
+  amount: 0.5,
+  sub_partner_id: '111394288',
+}, token);
+```
+
+#### `writeOff(params, jwtToken)`
+Write off from user to master.
+
+```typescript
+await np.writeOff({
+  currency: 'trx',
+  amount: 0.3,
+  sub_partner_id: '111394288',
+}, token);
+```
+
+#### `getTransfers(params?, jwtToken?)`
+List transfers.
+
+```typescript
+const transfers = await np.getTransfers(
+  { status: 'FINISHED', limit: 10, order: 'DESC' },
+  token
+);
+```
+
+#### `getTransfer(id, jwtToken?)`
+Get single transfer.
+
+```typescript
+const transfer = await np.getTransfer('327209161', token);
+```
+
+---
+
+### Conversions (custody, JWT)
+
+#### `createConversion(params, jwtToken)`
+Convert within custody account.
+
+```typescript
+const result = await np.createConversion({
+  amount: 50,
+  from_currency: 'usdttrc20',
+  to_currency: 'usdterc20',
+}, token);
+```
+
+#### `getConversionStatus(conversionId, jwtToken)`
+Get conversion status.
+
+```typescript
+const status = await np.getConversionStatus('1327866232', token);
+```
+
+#### `getConversions(params?, jwtToken?)`
+List conversions.
+
+```typescript
+const list = await np.getConversions({
+  status: 'FINISHED',
+  limit: 10,
+  order: 'DESC',
+}, token);
+```
+
+---
+
+### IPN / Webhooks
+
+#### `verifyIpn(payload, signature)` or `verifyIpnSignature(...)`
+Verify webhook is from NOWPayments.
+
+```typescript
+const np = new NowPayments({ apiKey: '...', ipnSecret: 'SECRET' });
+
+// With instance:
+if (np.verifyIpn(req.body, req.headers['x-nowpayments-sig'])) {
+  const { payment_id, payment_status } = req.body;
+  // process...
+}
+
+// Standalone:
+import { verifyIpnSignature } from 'nowpayments-node';
+verifyIpnSignature(req.body, sig, 'SECRET');
+```
+
+---
+
+### Helper functions
 
 ```typescript
 import {
-  isPaymentComplete,   // finished, failed, refunded, expired
-  isPaymentPending,   // waiting, confirming, etc.
+  isPaymentComplete,   // true if finished/failed/refunded/expired
+  isPaymentPending,   // true if waiting/confirming/...
   getStatusLabel,     // "Awaiting payment" | "Completed" | ...
-  getPaymentSummary,  // Short string for display
+  getPaymentSummary,  // "Awaiting payment: 0.001 BTC → bc1q..."
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUSES,
 } from 'nowpayments-node';
-```
 
-## Verify webhooks (IPN)
-
-Always verify callbacks before trusting them:
-
-```typescript
-import { NowPayments, verifyIpnSignature } from 'nowpayments-node';
-
-const np = new NowPayments({ apiKey: '...', ipnSecret: 'YOUR_IPN_SECRET' });
-
-// Express / Connect: use raw body (express.json()) for np.verifyIpn
-const sig = req.headers['x-nowpayments-sig'];
-if (sig && np.verifyIpn(req.body, sig)) {
-  // Valid – process payment update (req.body.payment_status, etc.)
+const payment = await np.getPaymentStatus(id);
+console.log(getStatusLabel(payment.payment_status));  // "Completed"
+if (isPaymentComplete(payment.payment_status)) {
+  // Fulfill order
 }
-
-// Or without instance:
-verifyIpnSignature(req.body, sig, 'YOUR_IPN_SECRET');
 ```
 
-## Errors
+---
+
+### Errors
 
 ```typescript
 import { NowPaymentsError } from 'nowpayments-node';
@@ -153,45 +506,18 @@ try {
   if (err instanceof NowPaymentsError) {
     console.log(err.message);     // "Invalid api key"
     console.log(err.statusCode); // 401
-    console.log(err.toString()); // "Invalid api key (status: 401) [UNAUTHORIZED]"
+    console.log(err.toString()); // "Invalid api key (status: 401)"
   }
 }
 ```
 
-## Common patterns
-
-**Payout flow (needs JWT):**
-```typescript
-const { token } = await np.getAuthToken(email, password);
-await np.validatePayoutAddress({ address, currency });
-const batch = await np.createPayout({ withdrawals: [{ address, currency, amount }] }, token);
-await np.verifyPayout(batch.id, '123456', token);  // 2FA code
-```
-
-**Check before creating payment:**
-```typescript
-const [estimate, min] = await Promise.all([
-  np.getEstimatePrice({ amount: 100, currency_from: 'usd', currency_to: 'btc' }),
-  np.getMinAmount({ currency_from: 'usd', currency_to: 'btc' }),
-]);
-if (estimate.estimated_amount >= min.min_amount) {
-  const payment = await np.createPayment({ ... });
-}
-```
-
-## Subscriptions, invoices, sub-partners
-
-See [API docs](https://documenter.getpostman.com/view/7907941/2s93JusNJt) for full list. This SDK supports:
-
-- **Subscriptions**: `getSubscriptions()`, `getSubscription()`, `deleteSubscription()`, `getSubscriptionPlans()`, etc.
-- **Invoices**: `createInvoice()`, `createInvoicePayment()`
-- **Sub-partners**: `getSubPartners()`, `getSubPartnerBalance()`, `getTransfers()`, etc.
+---
 
 ## Links
 
 - [API Docs](https://documenter.getpostman.com/view/7907941/2s93JusNJt)
 - [Sandbox](https://documenter.getpostman.com/view/7907941/T1LSCRHC)
-- [Help & Support](https://nowpayments.io/help/payments/api)
+- [Help](https://nowpayments.io/help/payments/api)
 
 ## License
 
