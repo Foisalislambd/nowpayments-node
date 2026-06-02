@@ -1,6 +1,6 @@
 # NOWPayments API – Methods Checklist
 
-Based on `copied-docs.md` (official Postman docs). ✅ = implemented in this package.
+Based on Postman exports in [`raw/copied-docs.md`](./raw/copied-docs.md). ✅ = implemented in this package.
 
 ## Auth & Status
 

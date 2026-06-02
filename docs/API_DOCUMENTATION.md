@@ -169,15 +169,16 @@ Create payment for existing invoice.
 ---
 
 ### POST /v1/payout
-Create mass payout (requires JWT auth).
-
----
-
-### POST /v1/payout
 Create mass payout (requires JWT Bearer token).
 
 ### POST /v1/payout/{id}/verify
-Verify payout.
+Verify payout with 2FA `verification_code`.
+
+### POST /v1/payout/w_id/cancel
+Cancel a scheduled payout (`payout_id` in body).
+
+### GET /v1/payout/fee
+Estimate network fee (`currency`, `amount` query params).
 
 ---
 
@@ -223,7 +224,7 @@ Get transfer details.
 
 1. Set ipn_callback_url in create_payment
 2. Generate IPN Secret in Dashboard
-3. Sign: HMAC-SHA512(JSON.stringify(params, Object.keys(params).sort()), ipn_secret)
+3. Recursively sort object keys, then `JSON.stringify` and HMAC-SHA512 with IPN secret (see `src/utils/ipn.ts`)
 4. Compare with x-nowpayments-sig header
 5. Verify callback authenticity
 
