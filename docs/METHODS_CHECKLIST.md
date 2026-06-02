@@ -27,7 +27,7 @@ Based on `copied-docs.md` (official Postman docs). ✅ = implemented in this pac
 | GET /v1/estimate | getEstimatePrice | ✅ | |
 | POST /v1/payment | createPayment | ✅ | |
 | GET /v1/payment/:id | getPaymentStatus | ✅ | |
-| GET /v1/payment/ | getPayments | ✅ | |
+| GET /v1/payment/ | getPayments | ✅ `getPayments(params?, jwtToken?)` | JWT recommended |
 
 ## Invoices
 
@@ -42,7 +42,8 @@ Based on `copied-docs.md` (official Postman docs). ✅ = implemented in this pac
 |-----|--------|---------|-------|
 | POST /v1/payout | createPayout | ✅ `createPayout(params, jwtToken)` | |
 | POST /v1/payout/:id/verify | verifyPayout | ✅ `verifyPayout(id, verificationCode, jwtToken)` | 2FA code in body |
-| POST /v1/payout/:id/cancel | cancelPayout | ✅ `cancelPayout(id, jwtToken)` | Cancel scheduled payout |
+| POST /v1/payout/w_id/cancel | cancelPayout | ✅ `cancelPayout(id, jwtToken)` | Cancel scheduled payout |
+| GET /v1/payout/fee | getPayoutFee | ✅ `getPayoutFee(currency, amount)` | Network fee estimate |
 | GET /v1/payout/:id | getPayoutStatus | ✅ `getPayoutStatus(id, jwtToken?)` | |
 | GET /v1/payout | getPayouts | ✅ `getPayouts(params?)` | |
 | POST /v1/payout/validate-address | validatePayoutAddress | ✅ | |

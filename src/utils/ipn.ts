@@ -27,7 +27,10 @@ function sortObject(obj: Record<string, unknown>): Record<string, unknown> {
  * Verify IPN callback signature from NOWPayments.
  * Safe to call – handles invalid input gracefully.
  *
- * @param payload - Raw request body (string or parsed object)
+ * Prefer the raw HTTP body string (before JSON parsing) when possible.
+ * Parsed objects from Express/Fastify can change number/string types and break verification.
+ *
+ * @param payload - Raw request body string (recommended) or parsed object
  * @param signature - Value from x-nowpayments-sig header
  * @param ipnSecret - Your IPN Secret from Dashboard → Store Settings
  * @returns true if signature is valid, false otherwise
@@ -56,9 +59,11 @@ export function verifyIpnSignature(
     hmac.update(jsonString);
     const computedSig = hmac.digest('hex');
 
-    const sigBuf = Buffer.from(signature, 'hex');
-    const computedBuf = Buffer.from(computedSig, 'hex');
-    if (sigBuf.length !== computedBuf.length) return false;
+    const sigHex = signature.trim().toLowerCase().replace(/[^a-f0-9]/g, '');
+    const computedHex = computedSig.toLowerCase();
+    const sigBuf = Buffer.from(sigHex, 'hex');
+    const computedBuf = Buffer.from(computedHex, 'hex');
+    if (sigBuf.length !== computedBuf.length || sigBuf.length === 0) return false;
 
     return crypto.timingSafeEqual(sigBuf, computedBuf);
   } catch {

@@ -128,7 +128,7 @@ export class NowPayments {
     if (!code) {
       throw new Error('Currency code is required (e.g. "btc", "eth")');
     }
-    const { data } = await this.client.get(`/v1/currencies/${code}`);
+    const { data } = await this.client.get(`/v1/currencies/${encodeURIComponent(code)}`);
     return data;
   }
 
@@ -189,10 +189,15 @@ export class NowPayments {
     return data;
   }
 
-  /** Get paginated list of payments */
-  async getPayments(params?: ListPaymentsParams): Promise<PaymentsListResponse> {
+  /** Get paginated list of payments. JWT recommended per API docs. */
+  async getPayments(
+    params?: ListPaymentsParams,
+    jwtToken?: string
+  ): Promise<PaymentsListResponse> {
+    const headers = jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {};
     const { data } = await this.client.get<PaymentsListResponse>('/v1/payment/', {
       params: params ?? {},
+      headers,
     });
     return data;
   }
@@ -409,13 +414,28 @@ export class NowPayments {
     return data;
   }
 
+  /** Estimate network fee for a payout */
+  async getPayoutFee(currency: string, amount: number): Promise<unknown> {
+    const code = currency?.trim();
+    if (!code) {
+      throw new Error('Currency is required (e.g. "btc", "eth")');
+    }
+    if (amount == null || Number.isNaN(amount)) {
+      throw new Error('Amount is required');
+    }
+    const { data } = await this.client.get('/v1/payout/fee', {
+      params: { currency: code, amount },
+    });
+    return data;
+  }
+
   /** Cancel a scheduled payout (created with execute_at). Use individual payout id, not batch id. Requires JWT. */
   async cancelPayout(payoutId: string, jwtToken: string): Promise<void> {
     if (!jwtToken?.trim()) {
       throw new Error('JWT token is required for cancelPayout. Call getAuthToken first.');
     }
     await this.client.post(
-      `/v1/payout/${payoutId}/cancel`,
+      '/v1/payout/w_id/cancel',
       { payout_id: payoutId },
       { headers: { Authorization: `Bearer ${jwtToken}` } }
     );
@@ -509,9 +529,14 @@ export class NowPayments {
     if (!jwtToken?.trim()) {
       throw new Error('JWT token is required for createSubPartnerPayment. Call getAuthToken first.');
     }
+    const body = { ...params } as Record<string, unknown>;
+    if (body.is_fixed_rate != null && body.fixed_rate == null) {
+      body.fixed_rate = body.is_fixed_rate;
+      delete body.is_fixed_rate;
+    }
     const { data } = await this.client.post<SubPartnerPaymentResponse>(
       '/v1/sub-partner/payment',
-      params,
+      body,
       { headers: { Authorization: `Bearer ${jwtToken}` } }
     );
     return data;
@@ -558,6 +583,9 @@ export class NowPayments {
     params: { currency: string; amount: number; sub_partner_id: string | number },
     jwtToken: string
   ): Promise<unknown> {
+    if (!jwtToken?.trim()) {
+      throw new Error('JWT token is required for writeOff. Call getAuthToken first.');
+    }
     const { data } = await this.client.post(
       '/v1/sub-partner/write-off',
       params,
